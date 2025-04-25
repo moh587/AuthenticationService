@@ -18,7 +18,7 @@ namespace AuthenticationService.Controllers
             _logger = logger;
         }
 
-        [HttpGet(Name = "GetWeatherForecastt")]
+        [HttpGet(Name = "GetWeatherForecast")]
         public IEnumerable<WeatherForecast> Get()
         {
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
