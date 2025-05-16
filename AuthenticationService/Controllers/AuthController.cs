@@ -3,12 +3,17 @@ using AuthenticationService.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace AuthenticationService.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AuthController : ControllerBase
+    public class AuthController(IConfiguration configuration) : ControllerBase
     {
         public static User user = new();
 
@@ -31,10 +36,27 @@ namespace AuthenticationService.Controllers
             if (new PasswordHasher<User>().VerifyHashedPassword(user, user.PasswordHash, request.Password)
                 == PasswordVerificationResult.Failed)
                 return "Wrong Password";
-            string Token = "Success";
-
+            string Token = CreateToken(user);
 
             return Token;
+        }
+        private string CreateToken(User user)
+        {
+            var claims = new List<Claim>
+            { 
+               new Claim(ClaimTypes.Name,user.Username)            
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration.GetValue<string>("JwtSettings:SecretKey")!));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha512);
+            var tokenDescriptor = new JwtSecurityToken
+                (
+                  issuer: configuration.GetValue<string>("JwtSettings:Issuer"),
+                  audience: configuration.GetValue<string>("JwtSettings:Audience"),
+                  claims: claims,
+                  signingCredentials: credentials
+                );
+            return new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
         }
     }
 }
